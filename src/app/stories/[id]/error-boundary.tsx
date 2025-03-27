@@ -13,5 +13,5 @@ export default function StoryErrorBoundary({ error, reset }: ErrorBoundaryProps)
     console.error('Story page error:', error);
   }, [error]);
 
-  return <StoryPageError />;
+  return <StoryPageError error={error} />;
 } 

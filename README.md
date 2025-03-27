@@ -1,128 +1,76 @@
-# TodakuReader V2
+# Todaku Gen V2
 
-A Japanese learning app that helps users improve their reading comprehension through interactive stories, vocabulary, and quizzes.
-
-## Features
-
-- Interactive Japanese stories with English translations
-- Vocabulary lists with readings and meanings
-- Grammar point explanations
-- Interactive quizzes for vocabulary and grammar
-- Progress tracking
-- Story upvoting system
+A modern todo application built with Next.js 14, TypeScript, Tailwind CSS, and Supabase.
 
 ## Tech Stack
 
-- iOS App:
-  - SwiftUI
-  - Swift Package Manager
-  - Supabase Swift Client
+- [Next.js 14](https://nextjs.org/) - React framework with App Router
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
+- [Shadcn UI](https://ui.shadcn.com/) - UI components
+- [Supabase](https://supabase.com/) - Backend and authentication
+- [React Hook Form](https://react-hook-form.com/) - Form handling
+- [Zod](https://zod.dev/) - Schema validation
+- [NUQS](https://nuqs.47ng.com/) - URL search params state management
 
-- Backend:
-  - Supabase (PostgreSQL)
-  - Row Level Security
-  - OAuth Authentication
-
-## Prerequisites
-
-- Xcode 15.0+
-- iOS 16.0+
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
-- [Homebrew](https://brew.sh) (for installing dependencies)
-
-## Setup
+## Getting Started
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/travisgerrard/todakugenv2.git
-   cd todakugenv2
-   ```
-
-2. Install Supabase CLI:
-   ```bash
-   brew install supabase/tap/supabase
-   ```
-
-3. Copy environment variables:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Then edit `.env.local` with your actual values.
-
-4. Set up Supabase:
-   ```bash
-   supabase login
-   supabase link --project-ref your-project-ref
-   supabase db push
-   ```
-
-5. Open the Xcode project:
-   ```bash
-   open TodakuReader-iOSProj/TodakuReader-iOS.xcodeproj
-   ```
-
-6. Update `Config.swift` with your Supabase credentials.
-
-7. Build and run the project in Xcode.
-
-## Environment Variables
-
-The following environment variables are required:
-
-- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
-- `GOOGLE_CLIENT_ID`: Google OAuth client ID
-- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
-- `OPENAI_API_KEY`: OpenAI API key for story generation
-
-## Development
-
-1. Create a new branch for your feature:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes and commit:
-   ```bash
-   git add .
-   git commit -m "Description of your changes"
-   ```
-
-3. Push to GitHub:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-4. Create a Pull Request on GitHub.
-
-## Database Migrations
-
-New migrations should be added to the `supabase/migrations` directory:
-
 ```bash
-supabase migration new your-migration-name
+git clone https://github.com/yourusername/todakugenv2.git
+cd todakugenv2
 ```
 
-Apply migrations:
+2. Install dependencies:
 ```bash
-supabase db push
+npm install
 ```
 
-## Security
+3. Create a `.env.local` file in the root directory with your Supabase credentials:
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- Environment variables are not committed to the repository
-- Supabase RLS policies are in place
-- OAuth credentials are managed securely
-- API keys are stored securely
+4. Start the development server:
+```bash
+npm run dev
+```
 
-## License
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Features
+
+- Modern UI with Shadcn UI components
+- Dark mode support
+- Type-safe API routes
+- Server-side rendering
+- Real-time updates with Supabase
+- Form validation with Zod
+- URL state management with NUQS
+- Responsive design
+
+## Project Structure
+
+```
+├── app/                # Next.js App Router
+│   ├── api/           # API routes
+│   ├── (auth)/        # Authentication routes
+│   └── (dashboard)/   # Dashboard routes
+├── components/        # React components
+├── lib/              # Utility functions
+├── types/            # TypeScript types
+└── public/           # Static assets
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request 
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

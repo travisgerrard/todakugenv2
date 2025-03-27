@@ -69,8 +69,6 @@ export function RecentStories() {
         >
           <h3 className="text-lg font-semibold mb-2">{story.title}</h3>
           <div className="text-sm text-muted-foreground mb-4">
-            <div>Level: {story.tadoku_level}</div>
-            <div>Topic: {story.topic}</div>
             <div>Upvotes: {story.upvotes}</div>
           </div>
           <div className="text-sm line-clamp-3">{story.content_jp}</div>

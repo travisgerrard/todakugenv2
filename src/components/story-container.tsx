@@ -20,7 +20,7 @@ export function StoryContainer({ story }: StoryContainerProps) {
         upvotes={story.upvotes}
       />
 
-      <StoryContent contentJp={story.content_jp} contentEn={story.content_en} />
+      <StoryContent story={story} />
 
       <StorySections story={story} />
     </div>

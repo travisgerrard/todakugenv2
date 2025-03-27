@@ -1,4 +1,4 @@
-// File: /Users/travisgerrard/Documents/Apps/todakuReaderV2/src/app/api/stories/generate/route.ts
+// File: /root/todakugenv2/src/app/api/stories/generate/route.ts
 import * as entry from '../../../../../../src/app/api/stories/generate/route.js'
 import type { NextRequest } from 'next/server.js'
 

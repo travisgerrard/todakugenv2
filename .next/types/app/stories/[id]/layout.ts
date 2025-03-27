@@ -1,4 +1,4 @@
-// File: /Users/travisgerrard/Documents/Apps/todakuReaderV2/src/app/stories/[id]/layout.tsx
+// File: /root/todakugenv2/src/app/stories/[id]/layout.tsx
 import * as entry from '../../../../../src/app/stories/[id]/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

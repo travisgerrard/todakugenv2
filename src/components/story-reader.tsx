@@ -37,8 +37,6 @@ export function StoryReader({ story }: StoryReaderProps) {
       <header className="mb-8">
         <h1 className="text-3xl font-bold mb-4">{story.title}</h1>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div>Level: {story.tadoku_level}</div>
-          <div>Topic: {story.topic}</div>
           <button
             onClick={handleUpvote}
             disabled={hasUpvoted}
@@ -63,36 +61,47 @@ export function StoryReader({ story }: StoryReaderProps) {
           <p className="whitespace-pre-wrap">{story.content_en}</p>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Vocabulary</h2>
-          <ul className="list-disc pl-6">
-            {story.vocabulary.map((word, index) => (
-              <li key={index}>{word}</li>
-            ))}
-          </ul>
-        </div>
+        {story.vocabulary && story.vocabulary.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Vocabulary</h2>
+            <ul className="list-none space-y-4">
+              {story.vocabulary.map((item, index) => (
+                <li key={index} className="p-4 bg-muted rounded-lg">
+                  <div className="font-semibold">{item.word}</div>
+                  <div className="text-sm text-muted-foreground">{item.reading}</div>
+                  <div className="mt-2">{item.meaning}</div>
+                  <div className="mt-2 text-sm">
+                    <div>Example: {item.example}</div>
+                    <div className="text-muted-foreground">{item.example_translation}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Grammar Points</h2>
-          <ul className="list-disc pl-6">
-            {story.grammar.map((point, index) => (
-              <li key={index}>{point}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+        {story.grammar && story.grammar.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Grammar Points</h2>
+            <ul className="list-none space-y-4">
+              {story.grammar.map((item, index) => (
+                <li key={index} className="p-4 bg-muted rounded-lg">
+                  <div className="font-semibold">{item.pattern}</div>
+                  <div className="mt-2">{item.explanation}</div>
+                  <div className="mt-2 text-sm">
+                    <div>Example: {item.example}</div>
+                    <div className="text-muted-foreground">{item.example_translation}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      <div className="mt-8">
-        <button
-          onClick={() => setIsReviewOpen(!isReviewOpen)}
-          className="w-full sm:w-auto px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
-          {isReviewOpen ? 'Hide Review' : 'Show Review'}
-        </button>
-
-        {isReviewOpen && (
-          <div className="mt-6">
-            <QuizSection storyId={story.id} />
+        {story.quizzes && story.quizzes.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Quizzes</h2>
+            <QuizSection quizzes={story.quizzes} />
           </div>
         )}
       </div>
