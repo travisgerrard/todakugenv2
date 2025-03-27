@@ -61,3 +61,6 @@ injected_container.swift
 *.swp
 *.bak 
 node_modules
+
+# Config files with secrets
+**/Config.swift
