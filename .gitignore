@@ -1,0 +1,63 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Supabase
+supabase/.temp/
+**/supabase/.branches/
+**/supabase/.temp/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode
+## User settings
+xcuserdata/
+*.xcuserstate
+
+## App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj
+.swiftpm
+
+# CocoaPods
+Pods/
+*.xcworkspace
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+injected_container.swift
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+*.log
+*.swp
+*.bak 
+node_modules
