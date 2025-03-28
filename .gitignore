@@ -8,6 +8,19 @@ supabase/.temp/
 **/supabase/.branches/
 **/supabase/.temp/
 
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
 # macOS
 .DS_Store
 .AppleDouble
@@ -60,7 +73,6 @@ injected_container.swift
 *.log
 *.swp
 *.bak 
-node_modules
 
 # Config files with secrets
 **/Config.swift

@@ -17,23 +17,50 @@ import {
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [wanikaniLevel, setWanikaniLevel] = useState('');
-  const [genkiChapter, setGenkiChapter] = useState('');
-  const [tadokuLevel, setTadokuLevel] = useState('');
+  const [wanikaniLevel, setWanikaniLevel] = useState('0');
+  const [genkiChapter, setGenkiChapter] = useState('0');
+  const [tadokuLevel, setTadokuLevel] = useState('0');
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
-  const { preferences, isLoading: preferencesLoading, updatePreferences } = useUserPreferences();
+  const { preferences, isLoading: preferencesLoading, error: preferencesError, updatePreferences } = useUserPreferences();
   const router = useRouter();
+
+  console.log('Home component rendering', { 
+    preferencesLoading, 
+    preferences, 
+    preferencesError,
+    currentState: { wanikaniLevel, genkiChapter, tadokuLevel }
+  });
 
   // Load preferences when they're available
   useEffect(() => {
     if (preferences) {
-      console.log('Loading preferences:', preferences);
-      setWanikaniLevel(preferences.wanikani_level?.toString() || '0');
-      setGenkiChapter(preferences.genki_chapter?.toString() || '0');
-      setTadokuLevel(preferences.tadoku_level?.toString() || '0');
+      console.log('Loading preferences into state:', {
+        wanikani_level: preferences.wanikani_level,
+        genki_chapter: preferences.genki_chapter,
+        tadoku_level: preferences.tadoku_level
+      });
+      
+      // Convert values to strings, ensuring they're not undefined/null
+      const wkLevel = preferences.wanikani_level !== null && preferences.wanikani_level !== undefined
+        ? preferences.wanikani_level.toString()
+        : '0';
+        
+      const gkChapter = preferences.genki_chapter !== null && preferences.genki_chapter !== undefined
+        ? preferences.genki_chapter.toString()
+        : '0';
+        
+      const tdLevel = preferences.tadoku_level !== null && preferences.tadoku_level !== undefined
+        ? preferences.tadoku_level.toString()
+        : '0';
+      
+      setWanikaniLevel(wkLevel);
+      setGenkiChapter(gkChapter);
+      setTadokuLevel(tdLevel);
+      
+      console.log('State updated to:', { wkLevel, gkChapter, tdLevel });
     }
   }, [preferences]);
 
@@ -47,6 +74,12 @@ export default function Home() {
       if (!session) {
         throw new Error('Please sign in to generate stories');
       }
+
+      console.log('Updating preferences with values:', {
+        wanikaniLevel,
+        genkiChapter,
+        tadokuLevel
+      });
 
       // Update preferences
       await updatePreferences({
@@ -83,16 +116,6 @@ export default function Home() {
     }
   };
 
-  if (preferencesLoading) {
-    return (
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 sm:py-12">
-          <div className="text-center">Loading preferences...</div>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="flex-1">
       <section className="container mx-auto px-4 py-8 sm:py-12">
@@ -105,9 +128,15 @@ export default function Home() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="wanikaniLevel">Wanikani Level</Label>
-            <Select value={wanikaniLevel} onValueChange={setWanikaniLevel}>
+            <Select 
+              value={wanikaniLevel} 
+              onValueChange={setWanikaniLevel} 
+              defaultValue={wanikaniLevel || '0'}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select Wanikani level" />
+                <SelectValue>
+                  {wanikaniLevel ? `Level ${wanikaniLevel}` : "Select Wanikani level"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-[300px] overflow-y-auto">
                 {[...Array(61)].map((_, i) => (
@@ -121,9 +150,15 @@ export default function Home() {
 
           <div className="space-y-2">
             <Label htmlFor="genkiChapter">Genki Chapter</Label>
-            <Select value={genkiChapter} onValueChange={setGenkiChapter}>
+            <Select 
+              value={genkiChapter} 
+              onValueChange={setGenkiChapter}
+              defaultValue={genkiChapter || '0'}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select Genki chapter" />
+                <SelectValue>
+                  {genkiChapter ? `Chapter ${genkiChapter}` : "Select Genki chapter"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-[300px] overflow-y-auto">
                 {[...Array(24)].map((_, i) => (
@@ -137,9 +172,15 @@ export default function Home() {
 
           <div className="space-y-2">
             <Label htmlFor="tadokuLevel">Tadoku Level</Label>
-            <Select value={tadokuLevel} onValueChange={setTadokuLevel}>
+            <Select 
+              value={tadokuLevel} 
+              onValueChange={setTadokuLevel}
+              defaultValue={tadokuLevel || '0'}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select Tadoku level" />
+                <SelectValue>
+                  {tadokuLevel ? `Level ${tadokuLevel}` : "Select Tadoku level"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {[...Array(6)].map((_, i) => (
