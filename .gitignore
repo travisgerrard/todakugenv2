@@ -76,3 +76,4 @@ injected_container.swift
 
 # Config files with secrets
 **/Config.swift
+**/GoogleSignInConfig.swift

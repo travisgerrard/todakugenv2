@@ -1,69 +1,157 @@
 import SwiftUI
 
 struct StoryDetailView: View {
-    let story: Story
-    @State private var showTranslation = false
-    @State private var selectedQuizIndex = 0
-    @State private var selectedAnswers: [Int?]
+    // Support both direct story object and story ID
+    var story: Story?
+    var storyId: String?
     
-    init(story: Story) {
-        self.story = story
-        // Initialize selectedAnswers here instead of onAppear
-        _selectedAnswers = State(initialValue: Array(repeating: nil, count: story.quizzes.count))
-    }
+    @StateObject private var viewModel = StoryViewModel(supabase: SupabaseClient.shared)
+    @State private var loadedStory: Story?
+    @State private var isLoading = false
+    @State private var error: Error?
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Story content section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(story.title)
-                        .font(.title)
+            VStack(alignment: .leading, spacing: 16) {
+                if isLoading {
+                    VStack {
+                        ProgressView("Loading story...")
+                            .padding()
+                        Text("This may take a moment...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(.vertical, 100)
+                } else if let displayStory = story ?? loadedStory {
+                    // Story title
+                    Text(displayStory.title)
+                        .font(.largeTitle)
                         .fontWeight(.bold)
-                        .textSelection(.enabled)
                     
-                    Text(story.contentJp)
+                    // Story metadata
+                    HStack {
+                        if let wanikaniLevel = displayStory.wanikaniLevel {
+                            Label("\(wanikaniLevel)", systemImage: "brain")
+                                .foregroundColor(.purple)
+                                .padding(.trailing, 8)
+                        }
+                        
+                        if let genkiChapter = displayStory.genkiChapter {
+                            Label("\(genkiChapter)", systemImage: "book")
+                                .foregroundColor(.blue)
+                                .padding(.trailing, 8)
+                        }
+                        
+                        if let tadokuLevel = displayStory.tadokuLevel {
+                            Label("\(tadokuLevel)", systemImage: "textformat")
+                                .foregroundColor(.green)
+                                .padding(.trailing, 8)
+                        }
+                        
+                        if let topic = displayStory.topic {
+                            Label(topic, systemImage: "tag")
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    .font(.caption)
+                    .padding(.bottom, 4)
+                    
+                    // Japanese content
+                    Text("Japanese")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(displayStory.contentJp)
                         .font(.body)
-                        .textSelection(.enabled)
+                        .lineSpacing(5)
                     
-                    if showTranslation {
-                        Text(story.contentEn)
+                    Divider()
+                    
+                    // English content
+                    Text("English Translation")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(displayStory.contentEn)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .lineSpacing(5)
+                } else if let error = error {
+                    // Error view
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundColor(.orange)
+                        
+                        Text("Error loading story")
+                            .font(.headline)
+                        
+                        Text(error.localizedDescription)
                             .font(.body)
                             .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                            .textSelection(.enabled)
+                            .multilineTextAlignment(.center)
+                        
+                        Button("Try Again") {
+                            loadStoryById()
+                        }
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                     }
-                    
-                    Button(action: { showTranslation.toggle() }) {
-                        Label(showTranslation ? "Hide Translation" : "Show Translation",
-                              systemImage: showTranslation ? "eye.slash" : "eye")
-                    }
-                }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .shadow(radius: 2)
-                
-                // Vocabulary section
-                if !story.vocabulary.isEmpty {
-                    VocabularySection(items: story.vocabulary)
-                }
-                
-                // Grammar section
-                if !story.grammar.isEmpty {
-                    GrammarSection(items: story.grammar)
-                }
-                
-                // Quiz section
-                if !story.quizzes.isEmpty {
-                    QuizSection(quizzes: story.quizzes,
-                              selectedQuizIndex: $selectedQuizIndex,
-                              selectedAnswers: $selectedAnswers)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 50)
+                } else {
+                    // No story found
+                    ContentUnavailableView(
+                        "Story Not Found",
+                        systemImage: "doc.text.magnifyingglass",
+                        description: Text("The story you requested could not be found.")
+                    )
+                    .padding(.vertical, 50)
                 }
             }
             .padding()
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitle("Story", displayMode: .inline)
+        .onAppear {
+            // If we have a storyId but no story, load it
+            if story == nil, let id = storyId {
+                loadStoryById()
+            }
+        }
+    }
+    
+    private func loadStoryById() {
+        guard let id = storyId else { return }
+        
+        isLoading = true
+        error = nil
+        
+        Task {
+            do {
+                await viewModel.fetchStories()
+                
+                // Find the specific story by ID
+                if let story = viewModel.stories.first(where: { $0.id == id }) {
+                    await MainActor.run {
+                        self.loadedStory = story
+                        self.isLoading = false
+                    }
+                } else {
+                    await MainActor.run {
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.error = error
+                    self.isLoading = false
+                }
+            }
+        }
     }
 }
 

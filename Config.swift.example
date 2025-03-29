@@ -2,8 +2,8 @@ import Foundation
 
 enum Config {
     static let supabaseURL = "YOUR_SUPABASE_URL"
-    static let supabaseKey = "YOUR_SUPABASE_KEY"
-    static let openAIKey = "YOUR_OPENAI_KEY"
+    static let supabaseKey = "YOUR_SUPABASE_ANON_KEY"
+    static let openAIKey = "YOUR_OPENAI_API_KEY"
     
     static func validate() {
         assert(supabaseURL != "YOUR_SUPABASE_URL", "Please set the SUPABASE_URL environment variable")

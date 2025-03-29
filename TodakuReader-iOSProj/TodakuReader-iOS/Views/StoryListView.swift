@@ -1,11 +1,10 @@
 import SwiftUI
 
 struct StoryListView: View {
-    @StateObject private var viewModel: StoryViewModel
-    
-    init(supabase: SupabaseClient) {
-        _viewModel = StateObject(wrappedValue: StoryViewModel(supabase: supabase))
-    }
+    @StateObject private var viewModel = StoryViewModel(supabase: SupabaseClient.shared)
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showingUserPreferences = false
+    @State private var showingStoryGenerator = false
     
     var body: some View {
         NavigationView {
@@ -15,7 +14,7 @@ struct StoryListView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List(viewModel.stories) { story in
-                        NavigationLink(destination: StoryDetailView(story: story)) {
+                        NavigationLink(destination: StoryDetailView(storyId: story.id)) {
                             StoryRowView(story: story)
                         }
                     }
@@ -43,17 +42,71 @@ struct StoryListView: View {
                                     systemImage: "book.closed",
                                     description: Text("Stories will appear here once they're available.")
                                 )
+                                .overlay(
+                                    VStack {
+                                        Spacer()
+                                        Button(action: { showingStoryGenerator = true }) {
+                                            Label("Generate Your First Story", systemImage: "plus.circle.fill")
+                                                .font(.headline)
+                                                .padding()
+                                                .background(Color.accentColor)
+                                                .foregroundColor(.white)
+                                                .cornerRadius(10)
+                                        }
+                                        .padding(.bottom, 50)
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
             .navigationTitle("Stories")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button(action: { showingUserPreferences = true }) {
+                            Label("User Preferences", systemImage: "person.crop.circle.badge.checkmark")
+                        }
+                        
+                        Button(action: { showingStoryGenerator = true }) {
+                            Label("Generate Story", systemImage: "wand.and.stars")
+                        }
+                        
+                        Button(action: {
+                            Task {
+                                await authViewModel.signOut()
+                            }
+                        }) {
+                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showingStoryGenerator = true }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
         }
         .task {
             if viewModel.stories.isEmpty {
                 await viewModel.fetchStories()
             }
+        }
+        .onAppear {
+            print("📱 StoryListView appeared - User is authenticated")
+        }
+        .sheet(isPresented: $showingUserPreferences) {
+            UserPreferencesView()
+                .environmentObject(authViewModel)
+        }
+        .sheet(isPresented: $showingStoryGenerator) {
+            StoryGeneratorView()
+                .environmentObject(authViewModel)
         }
     }
 }
