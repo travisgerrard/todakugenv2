@@ -9,108 +9,35 @@ struct StoryDetailView: View {
     @State private var loadedStory: Story?
     @State private var isLoading = false
     @State private var error: Error?
+    @State private var showTranslation = false
+    @State private var selectedQuizIndex = 0
+    @State private var selectedAnswers: [Int?] = []
+    @State private var activeTab = StoryTab.content
+    
+    enum StoryTab {
+        case content
+        case vocabulary
+        case grammar
+        case quiz
+    }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if isLoading {
-                    VStack {
-                        ProgressView("Loading story...")
-                            .padding()
-                        Text("This may take a moment...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .padding(.vertical, 100)
+                    loadingView
                 } else if let displayStory = story ?? loadedStory {
-                    // Story title
-                    Text(displayStory.title)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    storyHeaderView(displayStory)
                     
-                    // Story metadata
-                    HStack {
-                        if let wanikaniLevel = displayStory.wanikaniLevel {
-                            Label("\(wanikaniLevel)", systemImage: "brain")
-                                .foregroundColor(.purple)
-                                .padding(.trailing, 8)
-                        }
-                        
-                        if let genkiChapter = displayStory.genkiChapter {
-                            Label("\(genkiChapter)", systemImage: "book")
-                                .foregroundColor(.blue)
-                                .padding(.trailing, 8)
-                        }
-                        
-                        if let tadokuLevel = displayStory.tadokuLevel {
-                            Label("\(tadokuLevel)", systemImage: "textformat")
-                                .foregroundColor(.green)
-                                .padding(.trailing, 8)
-                        }
-                        
-                        if let topic = displayStory.topic {
-                            Label(topic, systemImage: "tag")
-                                .foregroundColor(.orange)
-                        }
-                    }
-                    .font(.caption)
-                    .padding(.bottom, 4)
+                    // Tab selector
+                    tabSelectorView
                     
-                    // Japanese content
-                    Text("Japanese")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text(displayStory.contentJp)
-                        .font(.body)
-                        .lineSpacing(5)
-                    
-                    Divider()
-                    
-                    // English content
-                    Text("English Translation")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text(displayStory.contentEn)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .lineSpacing(5)
+                    // Content based on active tab
+                    contentForActiveTab(displayStory)
                 } else if let error = error {
-                    // Error view
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundColor(.orange)
-                        
-                        Text("Error loading story")
-                            .font(.headline)
-                        
-                        Text(error.localizedDescription)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button("Try Again") {
-                            loadStoryById()
-                        }
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 50)
+                    errorView(error: error)
                 } else {
-                    // No story found
-                    ContentUnavailableView(
-                        "Story Not Found",
-                        systemImage: "doc.text.magnifyingglass",
-                        description: Text("The story you requested could not be found.")
-                    )
-                    .padding(.vertical, 50)
+                    emptyStateView(title: "Story Not Found", message: "The story you requested could not be found.")
                 }
             }
             .padding()
@@ -124,36 +51,364 @@ struct StoryDetailView: View {
         }
     }
     
+    // MARK: - Main Content Views
+    
+    @ViewBuilder
+    private func contentForActiveTab(_ displayStory: Story) -> some View {
+        switch activeTab {
+        case .content:
+            storyContentView(displayStory)
+        case .vocabulary:
+            vocabularyTabContent(displayStory)
+        case .grammar:
+            grammarTabContent(displayStory)
+        case .quiz:
+            quizTabContent(displayStory)
+        }
+    }
+    
+    @ViewBuilder
+    private func vocabularyTabContent(_ story: Story) -> some View {
+        if !story.vocabulary.isEmpty {
+            VocabularySection(items: story.vocabulary)
+        } else {
+            emptyStateView(title: "No Vocabulary", message: "This story doesn't have vocabulary items.")
+        }
+    }
+    
+    @ViewBuilder
+    private func grammarTabContent(_ story: Story) -> some View {
+        if !story.grammar.isEmpty {
+            GrammarSection(items: story.grammar)
+        } else {
+            emptyStateView(title: "No Grammar", message: "This story doesn't have grammar points.")
+        }
+    }
+    
+    @ViewBuilder
+    private func quizTabContent(_ story: Story) -> some View {
+        if !story.quizzes.isEmpty {
+            QuizSection(
+                quizzes: story.quizzes,
+                selectedQuizIndex: $selectedQuizIndex,
+                selectedAnswers: $selectedAnswers
+            )
+            .onAppear {
+                // Initialize answers array if needed
+                if selectedAnswers.count != story.quizzes.count {
+                    selectedAnswers = Array(repeating: nil, count: story.quizzes.count)
+                }
+            }
+        } else {
+            emptyStateView(title: "No Quizzes", message: "This story doesn't have any quizzes.")
+        }
+    }
+    
+    // MARK: - Component Views
+    
+    private var loadingView: some View {
+        VStack {
+            ProgressView("Loading story...")
+                .padding()
+            Text("This may take a moment...")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.vertical, 100)
+    }
+    
+    private func storyHeaderView(_ story: Story) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Story title
+            Text(story.title)
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            // Story metadata
+            HStack {
+                if let wanikaniLevel = story.wanikaniLevel {
+                    Label("\(wanikaniLevel)", systemImage: "brain")
+                        .foregroundColor(.purple)
+                        .padding(.trailing, 8)
+                }
+                
+                if let genkiChapter = story.genkiChapter {
+                    Label("\(genkiChapter)", systemImage: "book")
+                        .foregroundColor(.blue)
+                        .padding(.trailing, 8)
+                }
+                
+                if let tadokuLevel = story.tadokuLevel {
+                    Label("\(tadokuLevel)", systemImage: "textformat")
+                        .foregroundColor(.green)
+                        .padding(.trailing, 8)
+                }
+                
+                if let topic = story.topic {
+                    Label(topic, systemImage: "tag")
+                        .foregroundColor(.orange)
+                }
+            }
+            .font(.caption)
+            .padding(.bottom, 4)
+        }
+    }
+    
+    private var tabSelectorView: some View {
+        HStack {
+            ForEach([StoryTab.content, StoryTab.vocabulary, StoryTab.grammar, StoryTab.quiz], id: \.self) { tab in
+                Button(action: { activeTab = tab }) {
+                    VStack(spacing: 8) {
+                        Image(systemName: iconForTab(tab))
+                            .font(.system(size: 16, weight: .medium))
+                        Text(titleForTab(tab))
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .foregroundColor(activeTab == tab ? .accentColor : .secondary)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(Color(.systemGray6).opacity(0.5))
+        .cornerRadius(10)
+    }
+    
+    private func storyContentView(_ story: Story) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Japanese content
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Japanese")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                Text(story.contentJp)
+                    .font(.body)
+                    .lineSpacing(5)
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+            
+            // Translation toggle button
+            Button(action: { showTranslation.toggle() }) {
+                HStack {
+                    Text(showTranslation ? "Hide Translation" : "Show Translation")
+                    Image(systemName: showTranslation ? "eye.slash" : "eye")
+                }
+                .font(.subheadline)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .background(Color.accentColor.opacity(0.1))
+                .foregroundColor(.accentColor)
+                .cornerRadius(20)
+            }
+            .padding(.vertical, 8)
+            
+            // English content (conditional)
+            if showTranslation {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("English Translation")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(story.contentEn)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .lineSpacing(5)
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                .transition(.opacity)
+            }
+        }
+    }
+    
+    private func errorView(error: Error) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundColor(.orange)
+            
+            Text("Error loading story")
+                .font(.headline)
+            
+            Text(error.localizedDescription)
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Button("Try Again") {
+                loadStoryById()
+            }
+            .padding()
+            .background(Color.accentColor)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 50)
+    }
+    
+    private func emptyStateView(title: String, message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 50))
+                .foregroundColor(.secondary)
+            
+            Text(title)
+                .font(.headline)
+            
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 50)
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func titleForTab(_ tab: StoryTab) -> String {
+        switch tab {
+        case .content:
+            return "Story"
+        case .vocabulary:
+            return "Vocabulary"
+        case .grammar:
+            return "Grammar"
+        case .quiz:
+            return "Quiz"
+        }
+    }
+    
+    private func iconForTab(_ tab: StoryTab) -> String {
+        switch tab {
+        case .content:
+            return "book"
+        case .vocabulary:
+            return "character.book.closed"
+        case .grammar:
+            return "list.bullet"
+        case .quiz:
+            return "questionmark.circle"
+        }
+    }
+    
     private func loadStoryById() {
-        guard let id = storyId else { return }
-        
         isLoading = true
         error = nil
         
-        Task {
-            do {
-                await viewModel.fetchStories()
-                
-                // Find the specific story by ID
-                if let story = viewModel.stories.first(where: { $0.id == id }) {
+        print("📱 Loading story with ID: \(storyId ?? "nil")")
+        
+        // First try to load from cached stories
+        if let id = storyId,
+           let cachedStory = viewModel.stories.first(where: { $0.id == id }) {
+            print("📱 Found story in cache")
+            self.loadedStory = cachedStory
+            self.isLoading = false
+            
+            // Update from Supabase in the background
+            Task {
+                do {
+                    let updatedStory: Story = try await SupabaseClient.shared.database
+                        .from("stories")
+                        .select("""
+                            id,
+                            created_at,
+                            user_id,
+                            title,
+                            content_jp,
+                            content_en,
+                            wanikani_level,
+                            genki_chapter,
+                            tadoku_level,
+                            topic,
+                            upvotes,
+                            vocabulary,
+                            grammar,
+                            quizzes
+                        """)
+                        .eq("id", value: id)
+                        .single()
+                        .execute()
+                        .value
+                    
+                    print("📱 Updated story data from Supabase:")
+                    print("📱 - Title: \(updatedStory.title)")
+                    print("📱 - Vocabulary count: \(updatedStory.vocabulary.count)")
+                    print("📱 - Grammar count: \(updatedStory.grammar.count)")
+                    print("📱 - Quizzes count: \(updatedStory.quizzes.count)")
+                    
+                    // Only update if the story has changed
+                    if updatedStory.createdAt != cachedStory.createdAt {
+                        print("📱 Story has been updated, refreshing view")
+                        await MainActor.run {
+                            self.loadedStory = updatedStory
+                        }
+                    }
+                } catch {
+                    print("❌ Error updating story from Supabase: \(error)")
+                }
+            }
+        } else {
+            // If not in cache, load from Supabase
+            Task {
+                do {
+                    let story: Story = try await SupabaseClient.shared.database
+                        .from("stories")
+                        .select("""
+                            id,
+                            created_at,
+                            user_id,
+                            title,
+                            content_jp,
+                            content_en,
+                            wanikani_level,
+                            genki_chapter,
+                            tadoku_level,
+                            topic,
+                            upvotes,
+                            vocabulary,
+                            grammar,
+                            quizzes
+                        """)
+                        .eq("id", value: storyId)
+                        .single()
+                        .execute()
+                        .value
+                    
+                    print("📱 Loaded story data from Supabase:")
+                    print("📱 - Title: \(story.title)")
+                    print("📱 - Vocabulary count: \(story.vocabulary.count)")
+                    print("📱 - Grammar count: \(story.grammar.count)")
+                    print("📱 - Quizzes count: \(story.quizzes.count)")
+                    
                     await MainActor.run {
                         self.loadedStory = story
                         self.isLoading = false
                     }
-                } else {
+                } catch {
+                    print("❌ Error loading story from Supabase: \(error)")
                     await MainActor.run {
+                        self.error = error
                         self.isLoading = false
                     }
-                }
-            } catch {
-                await MainActor.run {
-                    self.error = error
-                    self.isLoading = false
                 }
             }
         }
     }
 }
+
+// MARK: - Supporting Views
 
 struct VocabularySection: View {
     let items: [VocabularyItem]
@@ -278,22 +533,14 @@ struct QuizSection: View {
                     .padding(.bottom, 24) // Add padding at the bottom
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))  // Hide the default page dots
             .frame(minHeight: 500) // Increase minimum height
-            .onChange(of: selectedQuizIndex) { newValue in
-                // Keep the index within bounds
-                if newValue < 0 {
-                    selectedQuizIndex = 0
-                } else if newValue >= quizzes.count {
-                    selectedQuizIndex = quizzes.count - 1
-                }
-            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Add compatible tab view style
             
             // Navigation and progress
             HStack(spacing: 16) {
                 // Previous button
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.easeInOut) {
                         selectedQuizIndex = max(0, selectedQuizIndex - 1)
                     }
                 }) {
@@ -319,7 +566,7 @@ struct QuizSection: View {
                 
                 // Next button
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.easeInOut) {
                         selectedQuizIndex = min(quizzes.count - 1, selectedQuizIndex + 1)
                     }
                 }) {
@@ -420,6 +667,5 @@ struct QuizQuestionView: View {
             }
             .padding()
         }
-        .animation(.easeOut, value: selectedAnswer)
     }
 } 

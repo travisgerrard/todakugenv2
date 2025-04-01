@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct UserPreferencesView: View {
-    @StateObject private var viewModel = UserPreferencesViewModel()
+    @StateObject private var viewModel: UserPreferencesViewModel
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) var dismiss
     
@@ -20,6 +20,11 @@ struct UserPreferencesView: View {
         case loaded
         case error
         case success
+    }
+    
+    init() {
+        let supabase = SupabaseClient.shared
+        _viewModel = StateObject(wrappedValue: UserPreferencesViewModel(supabase: supabase))
     }
     
     var body: some View {

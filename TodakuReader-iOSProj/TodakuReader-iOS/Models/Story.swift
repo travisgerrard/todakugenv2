@@ -107,6 +107,27 @@ struct VocabularyItem: Identifiable, Codable {
         case reading
         case meaning
         case example
+        case exampleTranslation
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        word = try container.decode(String.self, forKey: .word)
+        reading = try container.decode(String.self, forKey: .reading)
+        meaning = try container.decode(String.self, forKey: .meaning)
+        example = try container.decode(String.self, forKey: .example)
+        
+        // Try both camelCase and snake_case for exampleTranslation
+        if let translation = try? container.decode(String.self, forKey: .exampleTranslation) {
+            exampleTranslation = translation
+        } else {
+            let snakeCaseContainer = try decoder.container(keyedBy: SnakeCaseCodingKeys.self)
+            exampleTranslation = try snakeCaseContainer.decode(String.self, forKey: .exampleTranslation)
+        }
+    }
+    
+    private enum SnakeCaseCodingKeys: String, CodingKey {
         case exampleTranslation = "example_translation"
     }
 }
@@ -122,6 +143,26 @@ struct GrammarPoint: Identifiable, Codable {
         case pattern
         case explanation
         case example
+        case exampleTranslation
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        pattern = try container.decode(String.self, forKey: .pattern)
+        explanation = try container.decode(String.self, forKey: .explanation)
+        example = try container.decode(String.self, forKey: .example)
+        
+        // Try both camelCase and snake_case for exampleTranslation
+        if let translation = try? container.decode(String.self, forKey: .exampleTranslation) {
+            exampleTranslation = translation
+        } else {
+            let snakeCaseContainer = try decoder.container(keyedBy: SnakeCaseCodingKeys.self)
+            exampleTranslation = try snakeCaseContainer.decode(String.self, forKey: .exampleTranslation)
+        }
+    }
+    
+    private enum SnakeCaseCodingKeys: String, CodingKey {
         case exampleTranslation = "example_translation"
     }
 }
@@ -139,8 +180,31 @@ struct Quiz: Identifiable, Codable {
         case type
         case question
         case options
-        case correctAnswer = "correct_answer"
+        case correctAnswer
         case explanation
+        case relatedItem
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        type = try container.decode(QuizType.self, forKey: .type)
+        question = try container.decode(String.self, forKey: .question)
+        options = try container.decode([String].self, forKey: .options)
+        explanation = try container.decode(String.self, forKey: .explanation)
+        relatedItem = try container.decodeIfPresent(String.self, forKey: .relatedItem)
+        
+        // Try both camelCase and snake_case for correctAnswer
+        if let answer = try? container.decode(Int.self, forKey: .correctAnswer) {
+            correctAnswer = answer
+        } else {
+            let snakeCaseContainer = try decoder.container(keyedBy: SnakeCaseCodingKeys.self)
+            correctAnswer = try snakeCaseContainer.decode(Int.self, forKey: .correctAnswer)
+        }
+    }
+    
+    private enum SnakeCaseCodingKeys: String, CodingKey {
+        case correctAnswer = "correct_answer"
         case relatedItem = "related_item"
     }
 }

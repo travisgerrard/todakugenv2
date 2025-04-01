@@ -7,7 +7,7 @@ class AuthViewModel: ObservableObject {
     // Make the instance shared so AppDelegate can access it
     static let shared = AuthViewModel()
     
-    private let supabase = SupabaseClient.shared
+    private let supabase: SupabaseClient
     
     @Published var isAuthenticated = false
     @Published var isLoading = false
@@ -20,7 +20,9 @@ class AuthViewModel: ObservableObject {
     // Add timestamp tracking for URL processing
     private var processedURLsTimestamps: [String: Date] = [:]
     
-    init() {
+    init(supabase: SupabaseClient = SupabaseClient.shared) {
+        self.supabase = supabase
+        
         // Reset URL processing state on app startup
         processedURLsTimestamps.removeAll()
         isHandlingRedirect = false

@@ -105,8 +105,11 @@ struct StoryListView: View {
                 .environmentObject(authViewModel)
         }
         .sheet(isPresented: $showingStoryGenerator) {
-            StoryGeneratorView()
-                .environmentObject(authViewModel)
+            StoryGeneratorView(
+                viewModel: StoryGeneratorViewModel(supabase: SupabaseClient.shared),
+                preferencesViewModel: UserPreferencesViewModel(supabase: SupabaseClient.shared)
+            )
+            .environmentObject(authViewModel)
         }
     }
 }

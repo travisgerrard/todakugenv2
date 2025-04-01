@@ -1,246 +1,271 @@
 import SwiftUI
+import Foundation
 
 struct StoryGeneratorView: View {
-    @StateObject private var viewModel = StoryGeneratorViewModel()
-    @StateObject private var prefViewModel = UserPreferencesViewModel()
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authViewModel: AuthViewModel
-    @Environment(\.dismiss) var dismiss
-    @State private var navigateToStory = false
-    @State private var generatedStoryId: String? = nil
+    @ObservedObject var viewModel: StoryGeneratorViewModel
+    @ObservedObject var preferencesViewModel: UserPreferencesViewModel
+    @State private var isShowingStory = false
     
-    // Common UI elements
-    let minLevel = 1
-    let maxWanikaniLevel = 60
-    let maxGenkiChapter = 23
-    let maxTadokuLevel = 10
+    init(viewModel: StoryGeneratorViewModel, preferencesViewModel: UserPreferencesViewModel) {
+        self.viewModel = viewModel
+        self.preferencesViewModel = preferencesViewModel
+    }
     
     var body: some View {
         NavigationView {
-            contentView
-                .navigationTitle("Story Generator")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Close") { dismiss() }
+            ZStack {
+                content
+                
+                if isShowingStory, let storyId = viewModel.generatedStoryId {
+                    NavigationLink(
+                        destination: StoryDetailView(storyId: storyId),
+                        isActive: $isShowingStory
+                    ) {
+                        EmptyView()
                     }
                 }
-                .onAppear {
-                    loadUserPreferences()
+            }
+            .navigationTitle("Story Generator")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
                 }
-                .background(
-                    // Navigation link to the generated story
-                    NavigationLink(
-                        destination: generatedStoryId.map { id in
-                            StoryDetailView(storyId: id)
-                        },
-                        isActive: $navigateToStory,
-                        label: { EmptyView() }
-                    )
-                    .hidden()
-                )
+            }
+            .onChange(of: viewModel.generatedStoryId) { newValue in
+                if newValue != nil {
+                    // Wait a moment before navigating to make sure the story is saved
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isShowingStory = true
+                    }
+                }
+            }
+            .onAppear {
+                // Load user preferences when the view appears and update the generator VM afterwards
+                if !preferencesViewModel.isLoading {
+                    if let userId = authViewModel.user?.id.uuidString {
+                        // Check if preferences for this user are already loaded
+                        if preferencesViewModel.preferences.userId != userId {
+                            Task {
+                                // Load preferences asynchronously
+                                await preferencesViewModel.loadPreferences(for: userId)
+                                // Update the generator VM *after* loading is complete
+                                viewModel.loadUserPreferences(from: preferencesViewModel.preferences)
+                            }
+                        } else {
+                            // Preferences for the current user are already loaded, just update the generator VM
+                            viewModel.loadUserPreferences(from: preferencesViewModel.preferences)
+                        }
+                    } else {
+                        // No user logged in, load default preferences into the generator VM
+                        viewModel.loadUserPreferences(from: .defaultPreferences)
+                        // Optionally clear any previously loaded non-default preferences in preferencesViewModel
+                        // preferencesViewModel.resetToDefaults() // Example if you have such a method
+                    }
+                } else {
+                     // Still loading, perhaps wait or rely on onChange below if needed
+                     // For now, we assume loading finishes quickly or is handled by initial state.
+                     // If preferencesViewModel publishes changes, an onChange could also trigger the update.
+                     viewModel.loadUserPreferences(from: preferencesViewModel.preferences) // Load current state anyway
+                }
+            }
+            // Optional: Add onChange if preferences can change while the view is visible
+            // .onChange(of: preferencesViewModel.preferences) { newPreferences in
+            //     viewModel.loadUserPreferences(from: newPreferences)
+            // }
         }
     }
     
-    private var contentView: some View {
-        Form {
-            instructionsSection
-            learningLevelsSection
-            topicSelectionSection
-            if viewModel.isGenerating { generationStatusSection }
-            generateButtonSection
-            if viewModel.error != nil { errorSection }
-        }
-    }
-    
-    private var instructionsSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Generate a New Story")
-                    .font(.headline)
+    private var content: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Generate a Japanese Story")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("Create a custom story based on your learning level and interests.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.bottom, 10)
                 
-                Text("This will create a personalized Japanese story based on your learning level and preferences. The generation process usually takes 2-3 minutes.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.vertical, 4)
-        }
-    }
-    
-    private var learningLevelsSection: some View {
-        Section(header: Text("Learning Levels")) {
-            waniKaniLevelView
-            genkiChapterView
-            tadokuLevelView
-        }
-    }
-    
-    private var waniKaniLevelView: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text("WaniKani Level:")
+                // Learning Level Section
+                learningLevelSection
+                
+                // Topic Section
+                topicSection
+                
+                // Generation Button
+                generateButtonSection
+                
+                // Status Section (shows when generating)
+                if viewModel.isGenerating {
+                    statusSection
+                }
+                
                 Spacer()
-                Text("\(viewModel.selectedWanikaniLevel)")
-                    .foregroundColor(.secondary)
             }
-            Slider(
-                value: wkBinding,
-                in: Double(minLevel)...Double(maxWanikaniLevel),
-                step: 1
-            )
-            .accentColor(.purple)
+            .padding()
         }
     }
     
-    private var wkBinding: Binding<Double> {
-        Binding<Double>(
-            get: { Double(viewModel.selectedWanikaniLevel) },
-            set: { viewModel.selectedWanikaniLevel = Int($0) }
-        )
-    }
-    
-    private var genkiChapterView: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text("Genki Chapter:")
-                Spacer()
-                Text("\(viewModel.selectedGenkiChapter)")
-                    .foregroundColor(.secondary)
+    private var learningLevelSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Learning Level")
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            // WaniKani Level Slider
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("WaniKani Level:")
+                    Spacer()
+                    Text("\(viewModel.selectedWanikaniLevel)")
+                        .fontWeight(.medium)
+                }
+                .font(.subheadline)
+                
+                Slider(value: Binding(
+                    get: { Double(viewModel.selectedWanikaniLevel) },
+                    set: { viewModel.selectedWanikaniLevel = Int($0) }
+                ), in: 1...60, step: 1)
+                .accentColor(.blue)
             }
-            Slider(
-                value: genkiBinding,
-                in: Double(minLevel)...Double(maxGenkiChapter),
-                step: 1
-            )
-            .accentColor(.blue)
-        }
-    }
-    
-    private var genkiBinding: Binding<Double> {
-        Binding<Double>(
-            get: { Double(viewModel.selectedGenkiChapter) },
-            set: { viewModel.selectedGenkiChapter = Int($0) }
-        )
-    }
-    
-    private var tadokuLevelView: some View {
-        VStack(alignment: .leading) {
-            HStack {
+            
+            // Genki Chapter Slider
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Genki Chapter:")
+                    Spacer()
+                    Text("\(viewModel.selectedGenkiChapter)")
+                        .fontWeight(.medium)
+                }
+                .font(.subheadline)
+                
+                Slider(value: Binding(
+                    get: { Double(viewModel.selectedGenkiChapter) },
+                    set: { viewModel.selectedGenkiChapter = Int($0) }
+                ), in: 1...23, step: 1)
+                .accentColor(.green)
+            }
+            
+            // Tadoku Level Picker
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Tadoku Level:")
-                Spacer()
-                Text("\(viewModel.selectedTadokuLevel)")
-                    .foregroundColor(.secondary)
+                    .font(.subheadline)
+                
+                Picker("Tadoku Level", selection: $viewModel.selectedTadokuLevel) {
+                    Text("Level 1 (Beginner)").tag("1")
+                    Text("Level 2").tag("2")
+                    Text("Level 3").tag("3")
+                    Text("Level 4").tag("4")
+                    Text("Level 5 (Advanced)").tag("5")
+                }
+                .pickerStyle(SegmentedPickerStyle())
             }
-            Slider(
-                value: tadokuBinding,
-                in: Double(minLevel)...Double(maxTadokuLevel),
-                step: 1
-            )
-            .accentColor(.green)
         }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
     }
     
-    private var tadokuBinding: Binding<Double> {
-        Binding<Double>(
-            get: { 
-                // Convert String to Double
-                Double(viewModel.selectedTadokuLevel) ?? Double(minLevel)
-            },
-            set: { 
-                // Convert Double to String
-                viewModel.selectedTadokuLevel = String(Int($0)) 
-            }
-        )
-    }
-    
-    private var topicSelectionSection: some View {
-        Section(header: Text("Story Topic")) {
-            Picker("Topic", selection: $viewModel.selectedTopic) {
+    private var topicSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Story Topic")
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            Picker("Select a topic", selection: $viewModel.selectedTopic) {
                 ForEach(viewModel.availableTopics, id: \.self) { topic in
                     Text(topic).tag(topic)
                 }
             }
-            .pickerStyle(.menu)
+            .pickerStyle(WheelPickerStyle())
+            .frame(height: 100)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
+    }
+    
+    private var generateButtonSection: some View {
+        VStack {
+            Button(action: {
+                print("📱 Generate button tapped")
+                print("📱 Auth state - isAuthenticated: \(authViewModel.isAuthenticated), hasUser: \(authViewModel.user != nil)")
+                if let userId = authViewModel.user?.id.uuidString {
+                    print("📱 User ID: \(userId)")
+                    Task {
+                        await viewModel.generateStory(userId: userId)
+                    }
+                } else {
+                    print("❌ No user ID available")
+                }
+            }) {
+                HStack {
+                    Image(systemName: "wand.and.stars")
+                    Text(viewModel.isGenerating ? "Generating..." : "Generate Story")
+                }
+                .frame(minWidth: 0, maxWidth: .infinity)
+                .padding()
+                .background(viewModel.isGenerating ? Color.gray : Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .font(.headline)
+            }
+            .disabled(viewModel.isGenerating || authViewModel.user == nil)
+            
+            if let error = viewModel.error {
+                Text("Error: \(error.localizedDescription)")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.top, 8)
+            }
         }
     }
     
-    private var generationStatusSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 10) {
+    private var statusSection: some View {
+        VStack(spacing: 12) {
+            ProgressView(value: viewModel.generationProgress)
+                .progressViewStyle(LinearProgressViewStyle())
+                .frame(height: 8)
+            
+            HStack {
                 Text(viewModel.statusMessage)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                ProgressView(value: viewModel.generationProgress, total: 1.0)
-                    .progressViewStyle(LinearProgressViewStyle())
-                    .animation(.linear, value: viewModel.generationProgress)
-                    .padding(.vertical, 4)
+                Spacer()
                 
-                Text("\(Int(viewModel.generationProgress * 100))%")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-        }
-    }
-    
-    private var generateButtonSection: some View {
-        Section {
-            Button(action: generateStory) {
-                if viewModel.isGenerating {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                            .padding(.trailing, 8)
-                        Text("Generating...")
-                        Spacer()
-                    }
-                } else {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "wand.and.stars")
-                            .padding(.trailing, 8)
-                        Text("Generate Story")
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
+                Button(action: {
+                    viewModel.cancelGeneration()
+                }) {
+                    Text("Cancel")
+                        .font(.subheadline)
+                        .foregroundColor(.red)
                 }
             }
-            .disabled(viewModel.isGenerating)
-            .listRowBackground(Color.accentColor.opacity(0.2))
         }
-        .padding(.vertical, 4)
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
     }
-    
-    private var errorSection: some View {
-        Section {
-            if let error = viewModel.error {
-                Text(error.localizedDescription)
-                    .foregroundColor(.red)
-                    .font(.footnote)
-            }
-        }
-    }
-    
-    // Action methods extracted for clarity
-    private func loadUserPreferences() {
-        guard let userId = authViewModel.user?.id else { return }
-        // Convert UUID to String
-        let userIdString = userId.uuidString
-        Task {
-            await prefViewModel.loadPreferences(for: userIdString)
-            viewModel.loadUserPreferences(from: prefViewModel.preferences)
-        }
-    }
-    
-    private func generateStory() {
-        guard let userId = authViewModel.user?.id else { return }
-        // Convert UUID to String
-        let userIdString = userId.uuidString
-        Task {
-            await viewModel.generateStory(userId: userIdString)
-            if let storyId = viewModel.generatedStoryId {
-                generatedStoryId = storyId
-                navigateToStory = true
-            }
-        }
+}
+
+struct StoryGeneratorView_Previews: PreviewProvider {
+    static var previews: some View {
+        let supabase = SupabaseClient.shared
+        
+        StoryGeneratorView(
+            viewModel: StoryGeneratorViewModel(supabase: supabase),
+            preferencesViewModel: UserPreferencesViewModel(supabase: supabase)
+        )
+        .environmentObject(AuthViewModel(supabase: supabase))
     }
 } 
