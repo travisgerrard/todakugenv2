@@ -24,7 +24,21 @@ export async function GET(request: NextRequest) {
     
     // If we successfully got the content, return it
     if (response.ok) {
-      const html = await response.text();
+      let html = await response.text();
+      
+      // Fix static asset paths to ensure they're loaded correctly
+      // Replace relative paths with absolute URLs including the host
+      html = html.replace(
+        /(href|src)="(\/_next\/static\/[^"]+)"/g, 
+        `$1="${baseUrl}$2"`
+      );
+      
+      // Add a base tag to help with relative URLs
+      html = html.replace(
+        '<head>', 
+        `<head><base href="${baseUrl}/">`
+      );
+      
       return new NextResponse(html, {
         status: 200,
         headers: {

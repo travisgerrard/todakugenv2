@@ -25,14 +25,34 @@ export async function middleware(request: NextRequest) {
     hasBypassHeader 
   });
 
-  // Special handling for Tailscale requests to root path, but only if no bypass header
-  if (isTailscaleRequest && pathname === '/' && !hasBypassHeader) {
-    console.log('Handling Tailscale request to root path');
+  // Skip middleware for static assets and API routes if they have the bypass header
+  if (hasBypassHeader) {
+    return NextResponse.next();
+  }
+
+  // Special handling for Tailscale requests
+  if (isTailscaleRequest && !hasBypassHeader) {
+    console.log('Handling Tailscale request:', pathname);
     
-    // For Tailscale requests, let's rewrite to our special API route
+    // Create a clone of the URL to modify
     const url = request.nextUrl.clone();
-    url.pathname = '/api/tailscale-entry';
-    return NextResponse.rewrite(url);
+    
+    // For root path requests, use our special API route
+    if (pathname === '/') {
+      url.pathname = '/api/tailscale-entry';
+      return NextResponse.rewrite(url);
+    }
+    
+    // For static assets and other paths, add our bypass header and rewrite
+    // This ensures static assets are fetched directly from the server
+    const headers = new Headers(request.headers);
+    headers.set('X-Tailscale-Bypass', '1');
+    
+    return NextResponse.next({
+      request: {
+        headers
+      }
+    });
   }
 
   // Continue with the normal flow for other requests
@@ -57,5 +77,7 @@ export const config = {
     // - public (public files)
     // - auth/callback (auth callback route)
     '/((?!_next/static|_next/image|favicon.ico|public|auth/callback).*)',
+    // Additionally, match static assets for Tailscale handling
+    '/_next/static/:path*',
   ],
 }; 
