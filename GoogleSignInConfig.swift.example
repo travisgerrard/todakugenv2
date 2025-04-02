@@ -1,0 +1,8 @@
+import Foundation
+
+// Static configuration for Google Sign-In
+enum GoogleSignInConfig {
+    static let clientID = "YOUR_GOOGLE_CLIENT_ID"
+    static let urlScheme = "YOUR_URL_SCHEME"
+    static let callbackURL = "YOUR_URL_SCHEME://auth/callback"
+} 
