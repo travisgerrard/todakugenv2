@@ -84,3 +84,5 @@ Config.swift
 Info.plist
 .next/
 .next/
+.next/
+node_modules/
