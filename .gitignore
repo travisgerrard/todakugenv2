@@ -82,3 +82,4 @@ injected_container.swift
 *.backup
 Config.swift
 Info.plist
+.next/
