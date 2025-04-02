@@ -10,6 +10,7 @@ const nextConfig = {
   },
   distDir: '.next',
   swcMinify: true,
+  output: 'standalone',
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -20,7 +21,7 @@ const nextConfig = {
     config.resolve.symlinks = true;
     
     return config;
-  },
+  }
 }
 
 module.exports = nextConfig 

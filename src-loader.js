@@ -1,5 +1,6 @@
 const Module = require('module');
 const path = require('path');
+// Save the original resolve functionality
 const originalResolveFilename = Module._resolveFilename;
 
 // Intercept the module resolution to prioritize the src directory
