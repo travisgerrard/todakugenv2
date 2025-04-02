@@ -11,6 +11,7 @@ const nextConfig = {
   distDir: '.next',
   swcMinify: true,
   output: 'standalone',
+  poweredByHeader: false,
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
