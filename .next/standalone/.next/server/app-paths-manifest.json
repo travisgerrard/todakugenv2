@@ -1,9 +1,0 @@
-{
-  "/_not-found": "app/_not-found.js",
-  "/api/stories/[id]/upvote/route": "app/api/stories/[id]/upvote/route.js",
-  "/api/stories/generate/route": "app/api/stories/generate/route.js",
-  "/page": "app/page.js",
-  "/settings/page": "app/settings/page.js",
-  "/auth/callback/route": "app/auth/callback/route.js",
-  "/stories/[id]/page": "app/stories/[id]/page.js"
-}
