@@ -1,16 +1,19 @@
 {
   "/_not-found": "app/_not-found.js",
-  "/api/stories/[id]/upvote/route": "app/api/stories/[id]/upvote/route.js",
   "/api/tailscale-entry/route": "app/api/tailscale-entry/route.js",
   "/auth/callback/page": "app/auth/callback/page.js",
+  "/api/stories/[id]/upvote/route": "app/api/stories/[id]/upvote/route.js",
   "/debug/page": "app/debug/page.js",
   "/page": "app/page.js",
   "/settings/page": "app/settings/page.js",
-  "/api/debug/profile/route": "app/api/debug/profile/route.js",
   "/api/stories/generate-test/route": "app/api/stories/generate-test/route.js",
   "/api/stories/generate/route": "app/api/stories/generate/route.js",
   "/api/test-openai/route": "app/api/test-openai/route.js",
+  "/api/debug/profile/route": "app/api/debug/profile/route.js",
+  "/quizzes/page": "app/quizzes/page.js",
   "/stories/generate-test/route": "app/stories/generate-test/route.js",
-  "/stories/[id]/page": "app/stories/[id]/page.js",
-  "/stories/my-stories/page": "app/stories/my-stories/page.js"
+  "/vocabulary/page": "app/vocabulary/page.js",
+  "/grammar/page": "app/grammar/page.js",
+  "/stories/my-stories/page": "app/stories/my-stories/page.js",
+  "/stories/[id]/page": "app/stories/[id]/page.js"
 }
